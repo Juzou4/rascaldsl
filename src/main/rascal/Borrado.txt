@@ -1,0 +1,37 @@
+module alu::Syntax
+
+lexical Ident   = [a-zA-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
+lexical Natural = [0-9]+ !>> [0-9];
+
+keyword KW_FUNCTION = "function";
+keyword KW_END      = "end";
+keyword KW_IF       = "if";
+keyword KW_THEN     = "then";
+keyword KW_ELSE     = "else";
+
+lexical LAYOUT = [\t-\n\r\ ];
+layout  LAYOUTLIST = LAYOUT*;
+
+start syntax Program = program: Exp;
+
+syntax Func
+// forma con bloque
+  = func: Ident name "=" KW_FUNCTION "(" {Ident ","}* ")" "do" Exp KW_END
+  // forma corta en una línea
+  | func: Ident name "=" KW_FUNCTION "(" {Ident ","}* ")" "="  Exp KW_END
+  ;
+
+syntax Exp
+  = bracket "(" Exp ")"
+  | var: Ident
+  | nat: Natural
+  | call: Ident "(" {Exp ","}* ")"
+  > left  mul: Exp "*" Exp
+  > left  div: Exp "/" Exp
+  > left  add: Exp "+" Exp
+  > left  sub: Exp "-" Exp
+  > right assign: Exp ":=" Exp
+  > right seq: Exp ";" Exp
+  | cond: KW_IF Exp KW_THEN Exp KW_ELSE Exp KW_END
+  ;
+
