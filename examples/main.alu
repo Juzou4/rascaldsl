@@ -1,1 +1,10 @@
-funny(x<>2)
+from x to y
+it = iterator (tree) yielding (node)
+for i from 1 to 100 do
+    tree = tree.create(i)
+    leaves = iterator (t) yielding (node)
+    for leaf in leaves(tree) do
+        tree.value(leaf)
+    end
+end
+
