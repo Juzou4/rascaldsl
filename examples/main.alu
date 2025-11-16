@@ -7,4 +7,3 @@ for i from 1 to 100 do
         tree.value(leaf)
     end
 end
-
