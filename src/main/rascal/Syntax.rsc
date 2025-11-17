@@ -38,7 +38,7 @@ keyword KW_NEGATIVE = "negative";
 keyword KW_OR = "or";
 
 
-syntax Program = program: Module+;
+start syntax Program = program: Module+;
 
 syntax Module
   = dataModule: DataAbstraction
