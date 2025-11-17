@@ -1,5 +1,11 @@
 module Syntax
 
+lexical String = "\"" ![\"]* "\"";
+syntax Str = String;
+
+lexical Real = [0-9]+ "." [0-9]+;
+syntax RealLiteral = Real;
+
 lexical Identifier = [a-zA-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
 lexical Natural = [0-9]+ !>> [0-9];
 
@@ -31,7 +37,13 @@ keyword KW_POSITIVE = "positive";
 keyword KW_NEGATIVE = "negative";
 keyword KW_OR = "or";
 
-start syntax Program = program: Block;
+
+syntax Program = program: Module+;
+
+syntax Module
+  = dataModule: DataAbstraction
+  | funcModule: Func
+  ;
 
 syntax Block
   = block: Stmt+
@@ -44,6 +56,29 @@ syntax Func
   | func: Identifier name "=" KW_FUNCTION "(" {Identifier ","}* ")" "="  Exp KW_END
   ;
 
+syntax StructDecl
+  = structDecl:
+  Identifier "=" KW_STRUCT "(" {Identifier ","}* ")";
+
+syntax DataAbstraction
+  = dataAbs:
+  Identifier "=" KW_DATA KW_WITH {Identifier ","}+
+  StructDecl
+  Func+
+  KW_END Identifier
+  ;
+
+syntax CondBranch
+  = branch: Exp "-\>" Exp
+  ;
+
+syntax CondBlock
+  = block: CondBranch+
+  ;
+
+syntax FieldAssign
+  = fieldAssign: Identifier ":" Exp;
+
 
 syntax Stmt
   = assign: Identifier "=" Exp
@@ -55,10 +90,14 @@ syntax Stmt
   ;
 syntax Exp
 
-  = var: Identifier
-  | nat: Natural
-  | call: Identifier "(" {Exp ","}* ")"
+  = tupla: "(" Exp "," Exp ")"
+  | sequence: "(" {Exp ","}+ ")"
   | paren: "(" Exp ")"
+  | var: Identifier
+  | nat: Natural
+  | string: Str
+  | nreal: RealLiteral
+  | call: Identifier "(" {Exp ","}* ")"
 
   // Operadores aritmeticos
   > left  mul: Exp "*" Exp
@@ -77,15 +116,18 @@ syntax Exp
   // Logicos
   > left or: Exp KW_OR Exp
 
+  // Secuencias
   > right assign: Exp ":=" Exp
   > right seq: Exp ";" Exp
   > left p: Exp ":" Exp
+  > left dot: Exp "." Identifier
 
   // rango
   > non-assoc range: KW_FROM Exp KW_TO Exp
 
   // iterador
   > non-assoc iter: KW_ITERATOR "(" Exp ")" KW_YIELDING "(" Exp ")"
-  ;
-  
 
+  // expresion condicional
+  > non-assoc condExpr: KW_COND Exp KW_DO CondBlock KW_END
+  ;
