@@ -1,17 +1,3 @@
-complex = data with create, add, get_theta, equal
-
-    rep = struct(real, img)
-
-    create = function (x, y) do
-        rep$(real:x, img:y)
-    end create
-
-    add = function (cmplx1, cmplx2) do
-        rep$(real: cmplx1.real + cmplx2.real, img: cmplx1.img + cmplx2.img)
-    end add
-
-    get_theta = function (cmplx) do
-        arctan2(cmplx.real, cmplx.img)
-    end get_theta
-end complex
-
+test = function (x, y) do
+    1    :: Int
+end test

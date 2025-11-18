@@ -6,6 +6,12 @@ syntax Str = String;
 lexical Real = [0-9]+ "." [0-9]+;
 syntax RealLiteral = Real;
 
+lexical Char = "\'" ![\n\r] "\'";
+syntax CharLiteral = Char;
+
+lexical Bool = KW_TRUE | KW_FALSE;
+syntax BoolLiteral = Bool;
+
 lexical Identifier = [a-zA-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
 lexical Natural = [0-9]+ !>> [0-9];
 
@@ -16,7 +22,7 @@ layout  LAYOUTLIST = LAYOUT* !>> [\t-\n\r\ ];
 keyword KW_COND = "cond";
 keyword KW_DO = "do";
 keyword KW_DATA = "data";
-keyword KW_ELSEIF = "elseif";
+keyword KW_ELSIF = "elsif";
 keyword KW_END = "end";
 keyword KW_FOR = "for";
 keyword KW_FROM = "from";
@@ -36,36 +42,49 @@ keyword KW_YIELDING = "yielding";
 keyword KW_POSITIVE = "positive";
 keyword KW_NEGATIVE = "negative";
 keyword KW_OR = "or";
+//para entrega 3
+keyword KW_INT = "Int";
+keyword KW_BOOL = "Bool";
+keyword KW_CHAR = "Char";
+keyword KW_STRING = "String";
 
-//importante
-start syntax Program = program: DataAbstraction+;
+keyword KW_TRUE   = "true";
+keyword KW_FALSE  = "false";
 
-// syntax Module
-//   = dataModule: DataAbstraction
-//   | funcModule: Func
-//   ;
+
+start syntax Program = program: Module+;
+
+syntax Type
+  = intType:    KW_INT
+  | boolType:   KW_BOOL
+  | charType:   KW_CHAR
+  | stringType: KW_STRING
+  ;
+
+
+syntax Module
+  = dataModule: DataAbstraction
+  | funcModule: Func
+  ;
 
 syntax Block
   = block: Stmt+
   ;
 
 syntax Func
-// forma con bloque deberia de haber sido solo una, la notacion estandar de rascal dice {Identificador ","}*
-  = func: Identifier name "=" KW_FUNCTION "(" {Identifier ","}* ")" KW_DO Block KW_END
+// forma con bloque
+  = func: Identifier name "=" KW_FUNCTION "(" (Identifier ("," Identifier )* )? ")" KW_DO Block KW_END Identifier
   ;
 
-//struct con campos separador por , 
 syntax StructDecl
   = structDecl:
-  Identifier "=" KW_STRUCT "(" {Identifier ","}* ")"
-  ;
+  Identifier "=" KW_STRUCT "(" (Identifier ("," Identifier )* )? ")";
 
-//lista de operaciones despues de with separadas por ,
 syntax DataAbstraction
   = dataAbs:
-  Identifier "=" KW_DATA KW_WITH {Identifier ","}+ //al menos una operacion
+  Identifier "=" KW_DATA KW_WITH (Identifier ("," Identifier )* )?
   StructDecl
-  Func+ // una o mas funciones
+  Func+
   KW_END Identifier
   ;
 
@@ -81,29 +100,26 @@ syntax FieldAssign
   = fieldAssign: Identifier ":" Exp;
 
 
-//de qui voy a quitar el func para evitar ambiguedad de add= function vs Stmt
-//las funciones solo pueden aparecer donde la gramatica las pide osea dentro de DataAbstraction
 syntax Stmt
-  = assign: Identifier "=" Exp
-  | exprtStmt: Exp
+  = 
+   exprtStmt: Exp
   | forRange: KW_FOR Identifier KW_FROM Exp KW_TO Exp KW_DO Block KW_END
   | ForIn: KW_FOR Identifier KW_IN Exp KW_DO Block KW_END
   | ifStmt: KW_IF Exp KW_THEN Block KW_ELSE Block KW_END
   ;
-syntax Exp
 
+syntax Exp
   = tupla: "(" Exp "," Exp ")"
-  | sequence: "(" {Exp ","}+ ")"
+  | sequence: "(" {Exp {"," Exp}*}+ ")"
   | paren: "(" Exp ")"
   | var: Identifier
   | nat: Natural
   | string: Str
   | nreal: RealLiteral
-  //llamado f(e1, e2, ..., en)
-  | call: Identifier "(" {Exp ","}* ")"
-
-  //construccion de dato con campos nombrados: rep$(real:x, img; y)
-  | dataCall: Identifier "$" "(" {FieldAssign ","}* ")"
+  | boolLit: BoolLiteral
+  | charLit: CharLiteral
+  | call: Identifier "(" (Exp ("," Exp)* )? ")"
+  | dataCall: Identifier "$" "(" (FieldAssign ("," FieldAssign)* )? ")"
 
   // Operadores aritmeticos
   > left  mul: Exp "*" Exp
@@ -117,7 +133,7 @@ syntax Exp
   > left loe: Exp "\<=" Exp
   > left goe: Exp "\>=" Exp
   > left different: Exp "\<\>" Exp
-  > left eq: Exp "=" Exp
+  > left eq: Exp "==" Exp
 
   // Logicos
   > left or: Exp KW_OR Exp
