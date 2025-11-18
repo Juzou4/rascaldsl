@@ -9,14 +9,14 @@ syntax RealLiteral = Real;
 lexical Identifier = [a-zA-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
 lexical Natural = [0-9]+ !>> [0-9];
 
-lexical LAYOUT = [\t-\n\r\ ]+;
+lexical LAYOUT = [\t-\n\r\ ];
 layout  LAYOUTLIST = LAYOUT* !>> [\t-\n\r\ ];
 
 // -------- KEYWORDS --------
 keyword KW_COND = "cond";
 keyword KW_DO = "do";
 keyword KW_DATA = "data";
-keyword KW_ELSIF = "elsif";
+keyword KW_ELSEIF = "elseif";
 keyword KW_END = "end";
 keyword KW_FOR = "for";
 keyword KW_FROM = "from";
@@ -37,34 +37,35 @@ keyword KW_POSITIVE = "positive";
 keyword KW_NEGATIVE = "negative";
 keyword KW_OR = "or";
 
+//importante
+start syntax Program = program: DataAbstraction+;
 
-start syntax Program = program: Module+;
-
-syntax Module
-  = dataModule: DataAbstraction
-  | funcModule: Func
-  ;
+// syntax Module
+//   = dataModule: DataAbstraction
+//   | funcModule: Func
+//   ;
 
 syntax Block
   = block: Stmt+
   ;
 
 syntax Func
-// forma con bloque
-  = func: Identifier name "=" KW_FUNCTION "(" {Identifier {"," Identifier }* }* ")" KW_DO Block KW_END
-  // forma corta en una línea
-  | func: Identifier name "=" KW_FUNCTION "(" {Identifier {"," Identifier}*}* ")" "="  Exp KW_END
+// forma con bloque deberia de haber sido solo una, la notacion estandar de rascal dice {Identificador ","}*
+  = func: Identifier name "=" KW_FUNCTION "(" {Identifier ","}* ")" KW_DO Block KW_END
   ;
 
+//struct con campos separador por , 
 syntax StructDecl
   = structDecl:
-  Identifier "=" KW_STRUCT "(" {Identifier {"," Identifier }* }* ")";
+  Identifier "=" KW_STRUCT "(" {Identifier ","}* ")"
+  ;
 
+//lista de operaciones despues de with separadas por ,
 syntax DataAbstraction
   = dataAbs:
-  Identifier "=" KW_DATA KW_WITH {Identifier {"," Identifier }* }+
+  Identifier "=" KW_DATA KW_WITH {Identifier ","}+ //al menos una operacion
   StructDecl
-  Func+
+  Func+ // una o mas funciones
   KW_END Identifier
   ;
 
@@ -80,10 +81,11 @@ syntax FieldAssign
   = fieldAssign: Identifier ":" Exp;
 
 
+//de qui voy a quitar el func para evitar ambiguedad de add= function vs Stmt
+//las funciones solo pueden aparecer donde la gramatica las pide osea dentro de DataAbstraction
 syntax Stmt
   = assign: Identifier "=" Exp
   | exprtStmt: Exp
-  | funcDef: Func
   | forRange: KW_FOR Identifier KW_FROM Exp KW_TO Exp KW_DO Block KW_END
   | ForIn: KW_FOR Identifier KW_IN Exp KW_DO Block KW_END
   | ifStmt: KW_IF Exp KW_THEN Block KW_ELSE Block KW_END
@@ -91,14 +93,18 @@ syntax Stmt
 syntax Exp
 
   = tupla: "(" Exp "," Exp ")"
-  | sequence: "(" {Exp {"," Exp}*}+ ")"
+  | sequence: "(" {Exp ","}+ ")"
   | paren: "(" Exp ")"
   | var: Identifier
   | nat: Natural
   | string: Str
   | nreal: RealLiteral
-  | call: Identifier "(" {Exp {"," Exp}* }* ")"
-  | dataCall: Identifier "$" "(" {FieldAssign {"," FieldAssign}* }* ")"
+  //llamado f(e1, e2, ..., en)
+  | call: Identifier "(" {Exp ","}* ")"
+
+  //construccion de dato con campos nombrados: rep$(real:x, img; y)
+  | dataCall: Identifier "$" "(" {FieldAssign ","}* ")"
+
   // Operadores aritmeticos
   > left  mul: Exp "*" Exp
   > left  div: Exp "/" Exp
@@ -117,8 +123,6 @@ syntax Exp
   > left or: Exp KW_OR Exp
 
   // Secuencias
-  > right assign: Exp ":=" Exp
-  > right seq: Exp ";" Exp
   > left p: Exp ":" Exp
   > left dot: Exp "." Identifier
 
