@@ -1,8 +1,10 @@
 module Checker
 
 import Syntax;
-import ParseTree;
+
 extend analysis::typepal::TypePal;
+import ParseTree;
+import String;
 
 // Tipos abstractos que usaremos en el lenguaje ALU
 
@@ -14,154 +16,94 @@ data AType
   | stringType()
   ;
 
-str prettyAType(intType()) = "Int";
-str prettyAType(realType()) = "Real";
-str prettyAType(boolType()) = "Bool";
-str prettyAType(charType()) = "Char";
+str prettyAType(intType())    = "Int";
+str prettyAType(realType())   = "Real";
+str prettyAType(boolType())   = "Bool";
+str prettyAType(charType())   = "Char";
 str prettyAType(stringType()) = "String";
 
-// pasar de Syntax::Type a nuestro AType
-AType typeFromSyntax(Type t) {
-  switch (t) {
-    case intType(): return intType();
-    case boolType(): return boolType();
-    case charType(): return charType();
-    case stringType(): return stringType();
+//traducir sintaxis::tipo a Atype para las anotaciones de :: que buscamos
+  AType typeFromSyntax(Type t) {
+    switch (t) {
+      case intType(): return intType();
+      case boolType(): return boolType();
+      case charType(): return charType();
+      case stringType(): return stringType();
+    }
   }
-  return AType();
-}
 
-// Collect: tipos base (literales y paréntesis)
+  public TModel aluTModelFromTree(Tree pt) {
+    if (pt has top) {
+      pt = pt.top;
+    }
+    return collectAndSolve(pt);
+  }
 
-// enteros naturales
-void collect(current: (Exp) `<Natural _>`, Collector c) {
+  //regkas 
+  // nat: Natural
+void collect(current: Exp nat(Natural _), Collector c) {
   c.fact(current, intType());
 }
 
-// reales
-void collect(current: (Exp) `<RealLiteral _>`, Collector c) {
+// nreal: RealLiteral
+void collect(current: Exp nreal(RealLiteral _), Collector c) {
   c.fact(current, realType());
 }
 
-// strings
-void collect(current: (Exp) `<Str _>`, Collector c) {
+// string: Str
+void collect(current: Exp string(Str _), Collector c) {
   c.fact(current, stringType());
 }
 
-// booleanos
-void collect(current: (Exp) `<BoolLiteral _>`, Collector c) {
+// boolLit: BoolLiteral
+void collect(current: Exp boolLit(BoolLiteral _), Collector c) {
   c.fact(current, boolType());
 }
 
-// caracteres
-void collect(current: (Exp) `<CharLiteral _>`, Collector c) {
+// charLit: CharLiteral
+void collect(current: Exp charLit(CharLiteral _), Collector c) {
   c.fact(current, charType());
 }
 
-// paréntesis: ( e )
-void collect(current: (Exp) `( <Exp e> )`, Collector c) {
+// paren: "(" Exp ")"
+void collect(current: Exp paren(Exp e), Collector c) {
+  // el tipo de (e) es el mismo tipo de e
   c.fact(current, e);
   collect(e, c);
 }
 
-public TModel aluTModelFromTree(Tree pt) {
-  // si viene como start[Program], nos quedamos con el .top
-  if (pt has top) {
-    pt = pt.top;
-  }
-  // versión simple: usa la config por defecto de TypePal
-  return collectAndSolve(pt);
-}
 
-// Operadores aritméticos básicos
 
-void collect(current: (Exp) `<Exp e1> + <Exp e2>`, Collector c) {
+void collect(current: Exp add(Exp e1, Exp e2), Collector c) {
   c.calculate("add", current, [e1, e2],
     AType (Solver s) {
-      switch (<s.getType(e1), s.getType(e2)>) {
+      AType t1 = s.getType(e1);
+      AType t2 = s.getType(e2);
+
+      switch (<t1, t2>) {
         case <intType(),  intType()>:  return intType();
         case <realType(), realType()>: return realType();
         case <intType(),  realType()>: return realType();
         case <realType(), intType()>:  return realType();
-        default:
-          s.report(error(current, "`+` no está definido para %t y %t", e1, e2));
+        default: {
+          s.report(error(current,
+            "`+` no está definido para tipos %t y %t", e1, e2));
+        }
       }
     });
-  collect(e1, e2, c);
+  collect(e1, c);
+  collect(e2, c);
 }
 
-void collect(current: (Exp) `<Exp e1> - <Exp e2>`, Collector c) {
-  c.calculate("sub", current, [e1, e2],
-    AType (Solver s) {
-      switch (<s.getType(e1), s.getType(e2)>) {
-        case <intType(),  intType()>:  return intType();
-        case <realType(), realType()>: return realType();
-        case <intType(),  realType()>: return realType();
-        case <realType(), intType()>:  return realType();
-        default:
-          s.report(error(current, "`-` no está definido para %t y %t", e1, e2));
-      }
-    });
-  collect(e1, e2, c);
-}
-
-void collect(current: (Exp) `<Exp e1> * <Exp e2>`, Collector c) {
-  c.calculate("mul", current, [e1, e2],
-    AType (Solver s) {
-      switch (<s.getType(e1), s.getType(e2)>) {
-        case <intType(),  intType()>:  return intType();
-        case <realType(), realType()>: return realType();
-        case <intType(),  realType()>: return realType();
-        case <realType(), intType()>:  return realType();
-        default:
-          s.report(error(current, "`*` no está definido para %t y %t", e1, e2));
-      }
-    });
-  collect(e1, e2, c);
-}
-
-void collect(current: (Exp) `<Exp e1> / <Exp e2>`, Collector c) {
-  c.calculate("div", current, [e1, e2],
-    AType (Solver s) {
-      switch (<s.getType(e1), s.getType(e2)>) {
-        case <intType(),  intType()>:  return intType();
-        case <realType(), realType()>: return realType();
-        case <intType(),  realType()>: return realType();
-        case <realType(), intType()>:  return realType();
-        default:
-          s.report(error(current, "`/` no está definido para %t y %t", e1, e2));
-      }
-    });
-  collect(e1, e2, c);
-}
-
-// -------------------------------------------------------
-// 5. Comparación ==  (devuelve Bool)
-// -------------------------------------------------------
-
-void collect(current: (Exp) `<Exp e1> "==" <Exp e2>`, Collector c) {
-  c.calculate("eq", current, [e1, e2],
-    AType (Solver s) {
-      s.requireEqual(
-        e1, e2,
-        error(current, "Tipos incompatibles en `==`: %t y %t", e1, e2)
-      );
-      return boolType();
-    });
-  collect(e1, e2, c);
-}
-
-// -------------------------------------------------------
-// 6. Anotación: e :: Tipo
-// -------------------------------------------------------
-
-void collect(current: (Exp) `<Exp e> "::" <Type t>`, Collector c) {
+// Anotación de tipo: annotated: Exp "::" Type
+void collect(current: Exp annotated(Exp e, Type t), Collector c) {
   AType expected = typeFromSyntax(t);
 
   c.calculate("annotation", current, [e],
     AType (Solver s) {
       s.requireEqual(
-        e, expected,
+        e,
+        expected,
         error(current,
           "La anotación de tipo espera %t pero la expresión tiene tipo %t",
           expected, e
@@ -173,28 +115,15 @@ void collect(current: (Exp) `<Exp e> "::" <Type t>`, Collector c) {
   collect(e, c);
 }
 
-// -------------------------------------------------------
-// 7. Casos “neutros” para no romper nada
-//    (solo siguen recorriendo el árbol)
-// -------------------------------------------------------
-
-// variables solas (por ahora no hacemos def/use, solo seguimos)
-void collect(current: (Exp) `<Identifier _>`, Collector c) {
-  ; // sin tipo fijo todavía
+// 7. Casos “neutros” para seguir recorriendo el árbol
+// secuencia: p: Exp ":" Exp  (si quieres otros, los vas añadiendo)
+void collect(current: Exp p(Exp e1, Exp e2), Collector c) {
+  collect(e1, c);
+  collect(e2, c);
 }
 
-// cualquier otra forma de Exp que no toquemos todavía
-void collect(current: (Exp) `<Exp e1> ; <Exp e2>`, Collector c) {
-  collect(e1, e2, c);
+// por ahora: las variables las dejamos sin tipo fijo
+void collect(current: Exp var(Identifier _), Collector c) {
+  ; // aquí luego puedes meter def/use de variables
 }
 
-// -------------------------------------------------------
-// 8. Función auxiliar para crear el TModel
-// -------------------------------------------------------
-
-public TModel aluTModelFromTree(Tree pt) {
-  if (pt has top) {
-    pt = pt.top;
-  }
-  return collectAndSolve(pt);
-}
