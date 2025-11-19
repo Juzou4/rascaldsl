@@ -1,5 +1,4 @@
 module Checker
-
 import Syntax;
 
 extend analysis::typepal::TypePal;
@@ -14,6 +13,7 @@ data AType
   | boolType()
   | charType()
   | stringType()
+  | floatType()
   ;
 
 str prettyAType(intType())    = "Int";
@@ -21,6 +21,7 @@ str prettyAType(realType())   = "Real";
 str prettyAType(boolType())   = "Bool";
 str prettyAType(charType())   = "Char";
 str prettyAType(stringType()) = "String";
+str prettyAType(floatType()) = "Float";
 
 //traducir sintaxis::tipo a Atype para las anotaciones de :: que buscamos
   AType typeFromSyntax(Type t) {
@@ -29,6 +30,7 @@ str prettyAType(stringType()) = "String";
       case boolType(): return boolType();
       case charType(): return charType();
       case stringType(): return stringType();
+      case floatType(): return floatType();
     }
   }
 
@@ -39,7 +41,7 @@ str prettyAType(stringType()) = "String";
     return collectAndSolve(pt);
   }
 
-  //regkas 
+  //reglas 
   // nat: Natural
 void collect(current: Exp nat(Natural _), Collector c) {
   c.fact(current, intType());
@@ -65,6 +67,11 @@ void collect(current: Exp charLit(CharLiteral _), Collector c) {
   c.fact(current, charType());
 }
 
+// floatLit: FloatLiteral
+void collect(current: Exp floatLit(FloatLiteral _), Collector c) {
+  c.fact(current, floatType());
+}
+
 // paren: "(" Exp ")"
 void collect(current: Exp paren(Exp e), Collector c) {
   // el tipo de (e) es el mismo tipo de e
@@ -83,8 +90,9 @@ void collect(current: Exp add(Exp e1, Exp e2), Collector c) {
       switch (<t1, t2>) {
         case <intType(),  intType()>:  return intType();
         case <realType(), realType()>: return realType();
-        case <intType(),  realType()>: return realType();
-        case <realType(), intType()>:  return realType();
+        case <stringType(),  stringType()>: return stringType();
+        case <charType(), charType()>:  return charType();
+        case <floatType(), floatType()>: return floatType();
         default: {
           s.report(error(current,
             "`+` no está definido para tipos %t y %t", e1, e2));
@@ -126,4 +134,5 @@ void collect(current: Exp p(Exp e1, Exp e2), Collector c) {
 void collect(current: Exp var(Identifier _), Collector c) {
   ; // aquí luego puedes meter def/use de variables
 }
+
 

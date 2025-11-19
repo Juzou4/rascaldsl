@@ -1,3 +1,16 @@
-test = function (x, y) do
-    1    :: Int
+test = function (x,y) do
+    1 :: Int
 end test
+
+test2 = function (u,v) do
+    "ThisIsString" :: String
+end test2
+
+test3 = function (w,l) do
+    "c" :: Char
+end test3
+
+test4 = function (t, f) do
+    true :: Bool
+    false :: Bool
+end test4

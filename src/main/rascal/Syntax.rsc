@@ -47,6 +47,7 @@ keyword KW_INT = "Int";
 keyword KW_BOOL = "Bool";
 keyword KW_CHAR = "Char";
 keyword KW_STRING = "String";
+keyword KW_FLOAT = "Float";
 
 keyword KW_TRUE   = "true";
 keyword KW_FALSE  = "false";
@@ -59,6 +60,7 @@ syntax Type
   | boolType:   KW_BOOL
   | charType:   KW_CHAR
   | stringType: KW_STRING
+  | floatType:  KW_FLOAT
   ;
 
 
@@ -150,5 +152,13 @@ syntax Exp
 
   // expresion condicional
   > non-assoc condExpr: KW_COND Exp KW_DO CondBlock KW_END
+
+  // tipos
+
+  > left ddotInt: Natural (("+" | "-" | "*" | "/") Natural)* "::" KW_INT
+  > left ddotFloat: RealLiteral (("+" | "-" | "*" | "/") RealLiteral)* "::" KW_FLOAT
+  > left ddotChar: "\""[a-zA-Z0-9_]? "\"" "::" KW_CHAR
+  > left ddotString: "\""Exp "\"" "::" KW_STRING
+  > left ddotBool: (KW_TRUE | KW_FALSE) "::" KW_BOOL
   ;
   
