@@ -1,9 +1,9 @@
 module Checker
 import Syntax;
-
-extend analysis::typepal::TypePal;
 import ParseTree;
 import String;
+
+extend analysis::typepal::TypePal;
 
 // Tipos abstractos que usaremos en el lenguaje ALU
 
@@ -23,6 +23,11 @@ str prettyAType(charType())   = "Char";
 str prettyAType(stringType()) = "String";
 str prettyAType(floatType()) = "Float";
 
+
+
+
+
+/*
 //traducir sintaxis::tipo a Atype para las anotaciones de :: que buscamos
   AType typeFromSyntax(Type t) {
     switch (t) {
@@ -30,7 +35,7 @@ str prettyAType(floatType()) = "Float";
       case boolType(): return boolType();
       case charType(): return charType();
       case stringType(): return stringType();
-      case floatType(): return floatType();
+      case floatType(): return floatType(); 
     }
   }
 
@@ -40,7 +45,7 @@ str prettyAType(floatType()) = "Float";
     }
     return collectAndSolve(pt);
   }
-
+  
   //reglas 
   // nat: Natural
 void collect(current: Exp nat(Natural _), Collector c) {
@@ -78,7 +83,6 @@ void collect(current: Exp paren(Exp e), Collector c) {
   c.fact(current, e);
   collect(e, c);
 }
-
 
 
 void collect(current: Exp add(Exp e1, Exp e2), Collector c) {
@@ -135,4 +139,4 @@ void collect(current: Exp var(Identifier _), Collector c) {
   ; // aquí luego puedes meter def/use de variables
 }
 
-
+*/
